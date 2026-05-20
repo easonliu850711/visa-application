@@ -1,0 +1,20 @@
+cd C:\studio-imori
+
+pm2 stop visa-prod
+
+rename japan-visa japan-visa-backup-v74d
+
+tar -xzf japan-visa-v74d-iphone-date-buildfix-deployable.tar.gz
+
+rename japan-visa-export japan-visa
+
+cd C:\studio-imori\japan-visa
+
+C:\studio-imori\node-v20\node-v20.11.1-win-x64\npm.cmd install
+
+C:\studio-imori\node-v20\node-v20.11.1-win-x64\npm.cmd run build
+
+pm2 start ecosystem.config.js
+
+pm2 save
+
