@@ -282,6 +282,8 @@ export default function HomePage() {
           <div className="mt-4 text-[11px] text-slate-400 flex flex-wrap justify-center gap-3">
             <span>Made with 🌸 by Studio Imori</span>
             <span>·</span>
+            <span className="flex items-center gap-1">📧 imori850711@gmail.com</span>
+            <span>·</span>
 				<span className="bg-white px-2.5 py-1.5 rounded-full border border-slate-200 flex items-center gap-1 shadow-sm">
 					<Eye className="w-3 h-3 text-indigo-500" />
 						累積 {analytics?.total?.toLocaleString() ?? '—'} / 今日 {analytics?.today?.toLocaleString() ?? '—'}
