@@ -43,24 +43,14 @@ export default function ContributionForm({ bureaus }: Props) {
       const data = await res.json();
 
       if (res.ok && data.success) {
-        if (data.valid) {
-          setResult({
-            success: true,
-            valid: true,
-            actualDays: data.actualDays,
-            estimatedDays: data.estimatedDays,
-            diffDays: data.diffDays,
-            message: `✅ 感謝貢獻！你的資料 (${data.actualDays} 天) 已納入校正資料庫。\n預估 ${data.estimatedDays ?? '—'} 天，誤差 ${data.diffDays > 0 ? '+' : ''}${data.diffDays} 天。`,
-          });
-        } else {
-          setResult({
-            success: true,
-            valid: false,
-            actualDays: data.actualDays,
-            diffDays: data.diffDays,
-            message: `📝 已記錄（實際 ${data.actualDays} 天，與預估誤差超過 3 個月，標記為參考資料）`,
-          });
-        }
+        setResult({
+          success: true,
+          valid: data.valid,
+          actualDays: data.actualDays,
+          estimatedDays: data.estimatedDays,
+          diffDays: data.diffDays,
+          message: `感謝你的協助！你提供的資料（${data.actualDays} 天）已收到，幫助審查時間的推估更準確 🙏`,
+        });
       } else {
         setResult({
           success: false,
@@ -140,15 +130,7 @@ export default function ContributionForm({ bureaus }: Props) {
 
       {/* 結果訊息 */}
       {result && (
-        <div
-          className={`text-xs leading-relaxed p-3 rounded-xl whitespace-pre-line ${
-            result.success
-              ? result.valid
-                ? 'bg-teal-50 text-teal-800 border border-teal-200'
-                : 'bg-amber-50 text-amber-800 border border-amber-200'
-              : 'bg-rose-50 text-rose-700 border border-rose-200'
-          }`}
-        >
+        <div className={`text-xs leading-relaxed p-3 rounded-xl whitespace-pre-line ${result.success ? 'bg-teal-50 text-teal-800 border border-teal-200' : 'bg-rose-50 text-rose-700 border border-rose-200'}`}>
           {result.message}
         </div>
       )}
