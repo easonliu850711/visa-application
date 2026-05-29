@@ -157,10 +157,7 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({
     success: true,
     id: entry.id,
-    valid,
     actualDays,
-    estimatedDays,
-    diffDays,
   });
 }
 

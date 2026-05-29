@@ -17,10 +17,6 @@ export default function ContributionForm({ bureaus }: Props) {
   const [result, setResult] = useState<{
     success: boolean;
     message: string;
-    valid?: boolean;
-    actualDays?: number;
-    estimatedDays?: number | null;
-    diffDays?: number;
   } | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -45,10 +41,6 @@ export default function ContributionForm({ bureaus }: Props) {
       if (res.ok && data.success) {
         setResult({
           success: true,
-          valid: data.valid,
-          actualDays: data.actualDays,
-          estimatedDays: data.estimatedDays,
-          diffDays: data.diffDays,
           message: `感謝你的協助！你提供的資料（${data.actualDays} 天）已收到，幫助審查時間的推估更準確 🙏`,
         });
       } else {
