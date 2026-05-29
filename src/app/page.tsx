@@ -19,7 +19,7 @@ import PredictionReportV5 from '../components/v5/PredictionReportV5';
 import type { BureauInfo } from '../types';
 import type { V5Output } from '../lib/v5/engine';
 
-const MODEL_RELEASED_AT = '2026-05-20';
+const MODEL_RELEASED_AT = '2026-05-29';
 const MODEL_VERSION = 'V7.5';
 const API_PREFIX = '/visa-application';
 
