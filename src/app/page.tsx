@@ -268,7 +268,6 @@ export default function HomePage() {
             </h2>
             <p className="text-sm text-slate-600 mt-2 max-w-lg mx-auto">
               如果你已取得永住許可，填寫申請日與結果日，幫助我們校正預測模型。
-              {`如果實際天數與預估相差超過 3 個月，資料會標記為參考但不納入校正。`}
             </p>
           </div>
           <div className="max-w-md mx-auto">
