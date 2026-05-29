@@ -10,9 +10,11 @@ import {
   Eye,
   Sparkles,
   RefreshCw,
+  HeartHandshake,
 } from 'lucide-react';
 
 import UserInputForm from '../components/UserInputForm';
+import ContributionForm from '../components/ContributionForm';
 import PredictionReportV5 from '../components/v5/PredictionReportV5';
 import type { BureauInfo } from '../types';
 import type { V5Output } from '../lib/v5/engine';
@@ -251,6 +253,26 @@ export default function HomePage() {
                 <PredictionReportV5 result={v5Result} />
               )}
             </div>
+          </div>
+        </div>
+
+        {/* 貢獻數據表單 */}
+        <div className="mt-16 border-t border-slate-200/60 pt-12">
+          <div className="text-center mb-6">
+            <div className="inline-flex items-center gap-2 text-[11px] text-teal-700 bg-teal-50 border border-teal-200 px-3 py-1 rounded-full mb-3 shadow-sm">
+              <HeartHandshake className="w-3 h-3" />
+              貢獻數據
+            </div>
+            <h2 className="text-xl font-black text-slate-800">
+              你的實際經驗，能讓預測更準確
+            </h2>
+            <p className="text-sm text-slate-600 mt-2 max-w-lg mx-auto">
+              如果你已取得永住許可，填寫申請日與結果日，幫助我們校正預測模型。
+              {`如果實際天數與預估相差超過 3 個月，資料會標記為參考但不納入校正。`}
+            </p>
+          </div>
+          <div className="max-w-md mx-auto">
+            <ContributionForm bureaus={bureaus} />
           </div>
         </div>
 
