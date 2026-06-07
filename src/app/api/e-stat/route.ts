@@ -1,20 +1,42 @@
-// ============================================================
-// /api/e-stat — 入管局清單 API（輕量 GET，不載入完整數據）
-// ============================================================
-
 import { NextResponse } from 'next/server';
-import { fetchEStatData } from '@/lib/e-stat-parser';
 
 export const dynamic = 'force-dynamic';
 
+const CORE_API_BASE = (process.env.CENTRAL_API_BASE_URL || 'http://127.0.0.1:4005').replace(/\/+$/, '');
+const CORE_API_KEY = process.env.CENTRAL_API_KEY || process.env.X_IMORI_API_KEY || '';
+
 export async function GET() {
   try {
-    const { bureaus, error } = await fetchEStatData();
-    if (error) {
-      return NextResponse.json({ error }, { status: 500 });
+    const headers: HeadersInit = {};
+
+    if (CORE_API_KEY) {
+      headers['x-imori-api-key'] = CORE_API_KEY;
     }
-    return NextResponse.json({ bureaus });
+
+    const upstream = await fetch(`${CORE_API_BASE}/api/visa/e-stat`, {
+      method: 'GET',
+      headers,
+      cache: 'no-store',
+    });
+
+    const raw = await upstream.json();
+
+    const bureaus = raw?.data?.bureaus ?? raw?.bureaus ?? [];
+
+    return NextResponse.json(
+      { bureaus },
+      {
+        status: upstream.status,
+        headers: {
+          'cache-control': 'no-store',
+          'x-visa-api-mode': 'central-api-proxy',
+        },
+      },
+    );
   } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    return NextResponse.json(
+      { error: e.message || 'Central API proxy failed' },
+      { status: 500 },
+    );
   }
 }
