@@ -36,17 +36,31 @@ export default function ContributionForm({ bureaus }: Props) {
         }),
       });
 
-      const data = await res.json();
+      const payload = await res.json().catch(() => null);
+      const contributionData =
+        payload?.data ??
+        payload?.result ??
+        payload ??
+        {};
 
-      if (res.ok && data.success) {
+      if (res.ok && payload?.success !== false) {
+        const actualDays = contributionData?.actualDays ?? payload?.actualDays;
+
         setResult({
           success: true,
-          message: `感謝你的協助！你提供的資料（${data.actualDays} 天）已收到，幫助審查時間的推估更準確 🙏`,
+          message: actualDays
+            ? `感謝你的協助！你提供的資料（${actualDays} 天）已收到，幫助審查時間的推估更準確 🙏`
+            : '感謝你的協助！你提供的資料已收到，幫助審查時間的推估更準確 🙏',
         });
       } else {
         setResult({
           success: false,
-          message: data.error || '送出失敗',
+          message:
+            payload?.message ||
+            payload?.error ||
+            contributionData?.message ||
+            contributionData?.error ||
+            '送出失敗',
         });
       }
     } catch (e: any) {

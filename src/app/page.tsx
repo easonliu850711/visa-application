@@ -19,7 +19,7 @@ import PredictionReportV5 from '../components/v5/PredictionReportV5';
 import type { BureauInfo } from '../types';
 import type { V5Output } from '../lib/v5/engine';
 
-const MODEL_RELEASED_AT = '2026-05-29';
+const MODEL_RELEASED_AT = '2026-06-09';
 const MODEL_VERSION = 'V7.5';
 const API_PREFIX = '/visa-application';
 
@@ -29,6 +29,32 @@ type AnalyticsSummary = {
   date: string;
   lastUpdated: string | null;
 };
+
+function unwrapApiData<T = any>(payload: any): T {
+  if (payload && typeof payload === 'object') {
+    if ('data' in payload && payload.data !== undefined) {
+      return payload.data as T;
+    }
+
+    if ('result' in payload && payload.result !== undefined) {
+      return payload.result as T;
+    }
+  }
+
+  return payload as T;
+}
+
+function getApiErrorMessage(payload: any, fallback: string) {
+  return (
+    payload?.message ||
+    payload?.error ||
+    payload?.data?.message ||
+    payload?.data?.error ||
+    payload?.result?.message ||
+    payload?.result?.error ||
+    fallback
+  );
+}
 
 export default function HomePage() {
   const [bureaus, setBureaus] = useState<BureauInfo[]>([]);
@@ -48,17 +74,24 @@ export default function HomePage() {
       setBureauError(null);
 
       try {
-        const res = await fetch(`${API_PREFIX}/api/e-stat`, { cache: 'no-store' });
+        const res = await fetch(`${API_PREFIX}/api/e-stat`, {
+          cache: 'no-store',
+        });
 
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status}`);
+        const payload = await res.json().catch(() => null);
+        const bureauPayload = unwrapApiData<{ bureaus?: BureauInfo[] }>(payload);
+        const bureauList =
+          bureauPayload?.bureaus ??
+          payload?.bureaus ??
+          [];
+
+        if (!res.ok || payload?.success === false) {
+          throw new Error(getApiErrorMessage(payload, `HTTP ${res.status}`));
         }
 
-        const data = await res.json();
-
         if (!cancelled) {
-          if (data.bureaus?.length > 0) {
-            setBureaus(data.bureaus);
+          if (bureauList.length > 0) {
+            setBureaus(bureauList);
           } else {
             setBureauError('目前無可用入管局資料');
           }
@@ -81,8 +114,12 @@ export default function HomePage() {
           method: 'POST',
           cache: 'no-store',
         });
-        if (res.ok) {
-          setAnalytics(await res.json());
+
+        const payload = await res.json().catch(() => null);
+        const analyticsPayload = unwrapApiData<AnalyticsSummary>(payload);
+
+        if (res.ok && analyticsPayload) {
+          setAnalytics(analyticsPayload);
         }
       } catch (e) {
         console.warn('Failed to track visit:', e);
@@ -118,13 +155,19 @@ export default function HomePage() {
         }),
       });
 
-      const data = await res.json();
+      const payload = await res.json().catch(() => null);
+      const predictionData = unwrapApiData<V5Output>(payload);
 
-      if (!res.ok || data.status === 'error' || data.status === 'insufficient_data') {
-        setError(data.message || data.error || '預測失敗');
+      if (
+        !res.ok ||
+        payload?.success === false ||
+        predictionData?.status === 'error' ||
+        predictionData?.status === 'insufficient_data'
+      ) {
+        setError(getApiErrorMessage(payload, '預測失敗'));
         setV5Result(null);
       } else {
-        setV5Result(data as V5Output);
+        setV5Result(predictionData);
       }
     } catch (e: any) {
       setError(`連線錯誤：${e.message}`);
