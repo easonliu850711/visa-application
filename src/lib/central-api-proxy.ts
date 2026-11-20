@@ -1,14 +1,21 @@
-import { NextRequest } from 'next/server';
+import type { NextRequest } from 'next/server';
 
-const CORE_API_BASE = (
-  process.env.CENTRAL_API_BASE_URL ||
-  process.env.API_CORE_BASE_URL ||
-  'http://127.0.0.1:3005'
-).replace(/\/+$/, '');
-const CORE_API_KEY = process.env.CENTRAL_API_KEY || process.env.X_IMORI_API_KEY || '';
+function configuredOrigin(): string | null {
+  const value = process.env.CENTRAL_API_BASE_URL?.trim() || process.env.API_CORE_BASE_URL?.trim();
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password ||
+        url.search || url.hash || url.pathname !== '/') return null;
+    return url.origin;
+  } catch { return null; }
+}
 
-function toCoreUrl(path: string) {
-  return `${CORE_API_BASE}${path.startsWith('/') ? path : `/${path}`}`;
+function proxyFailure(status: number, code: string, message: string) {
+  return Response.json({ success: false, error: { code, message } }, {
+    status,
+    headers: { 'cache-control': 'no-store', 'x-visa-api-mode': 'central-api-proxy' },
+  });
 }
 
 function buildResponseHeaders(upstream: Response) {
@@ -26,29 +33,46 @@ function buildResponseHeaders(upstream: Response) {
 }
 
 async function proxyToCore(method: 'GET' | 'POST', path: string, body?: string, contentType?: string) {
+  const origin = configuredOrigin();
+  if (!origin) return proxyFailure(503, 'SERVICE_UNAVAILABLE', '中央 API 連線設定尚未就緒');
+  // Routes supply fixed paths. Reject absolute/protocol-relative inputs rather
+  // than allowing them to replace the explicitly configured service origin.
+  if (!path.startsWith('/api/') || path.includes('\\') || path.includes('..')) {
+    return proxyFailure(500, 'INTERNAL_ERROR', '中央 API 路由設定無效');
+  }
   const headers = new Headers();
 
   if (contentType) {
     headers.set('content-type', contentType);
   }
 
-  if (CORE_API_KEY) {
-    headers.set('x-imori-api-key', CORE_API_KEY);
+  const key = process.env.CENTRAL_API_KEY || process.env.X_IMORI_API_KEY;
+  if (key) {
+    headers.set('x-imori-api-key', key);
   }
 
-  const upstream = await fetch(toCoreUrl(path), {
-    method,
-    headers,
-    body,
-    cache: 'no-store',
-  });
+  const signal = AbortSignal.timeout(10000);
+  try {
+    const upstream = await fetch(`${origin}${path}`, {
+      method,
+      headers,
+      body,
+      cache: 'no-store',
+      redirect: 'error',
+      signal,
+    });
 
-  const text = await upstream.text();
+    const text = await upstream.text();
 
-  return new Response(text, {
-    status: upstream.status,
-    headers: buildResponseHeaders(upstream),
-  });
+    return new Response([204, 205, 304].includes(upstream.status) ? null : text, {
+      status: upstream.status,
+      headers: buildResponseHeaders(upstream),
+    });
+  } catch {
+    return signal.aborted
+      ? proxyFailure(504, 'GATEWAY_TIMEOUT', '中央 API 回應逾時，請稍後重試')
+      : proxyFailure(502, 'EXTERNAL_API_ERROR', '中央 API 暫時無法連線，請稍後重試');
+  }
 }
 
 export async function proxyGet(path: string) {
